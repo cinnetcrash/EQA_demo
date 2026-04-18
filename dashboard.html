@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRAB Outbreak Dashboard — DTU EQA Jan 2024</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+:root {
+  --bg: #f0f2f7;
+  --card: #ffffff;
+  --header-dark: #0f2044;
+  --accent: #2563eb;
+  --accent2: #38bdf8;
+  --border: #e2e8f0;
+  --text: #1e293b;
+  --muted: #64748b;
+  --danger: #e41a1c;
+  --ha:#e41a1c; --hb:#377eb8; --hc:#4daf4a; --hd:#984ea3; --he:#ff7f00; --hf:#a65628;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+
+/* ── HEADER ── */
+header{
+  background:linear-gradient(135deg,#0f2044 0%,#1a3a7a 60%,#2563eb 100%);
+  color:#fff; padding:18px 28px 14px;
+}
+.header-top{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap;}
+header h1{font-size:1.35rem;font-weight:700;line-height:1.3;}
+header h1 em{font-style:italic;color:#93c5fd;}
+.header-meta{font-size:0.75rem;opacity:0.65;margin-top:4px;}
+.badge-dtu{
+  background:rgba(255,255,255,0.15);border-radius:8px;padding:6px 12px;
+  font-size:0.75rem;font-weight:600;white-space:nowrap;
+  border:1px solid rgba(255,255,255,0.2);
+}
+.stats-bar{display:flex;gap:12px;margin-top:14px;flex-wrap:wrap;}
+.stat{
+  background:rgba(255,255,255,0.12);border-radius:8px;padding:8px 14px;
+  border:1px solid rgba(255,255,255,0.15);
+}
+.stat-val{font-size:1.1rem;font-weight:800;display:block;line-height:1.1;}
+.stat-lbl{font-size:0.68rem;opacity:0.7;display:block;}
+
+/* ── TABS ── */
+nav{background:#0f2044;padding:0 28px;display:flex;gap:2px;border-bottom:2px solid #1e3a6a;}
+.tab{
+  background:transparent;border:none;color:rgba(255,255,255,0.55);
+  padding:10px 16px;font-size:0.82rem;font-weight:500;cursor:pointer;
+  border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;
+}
+.tab:hover{color:#fff;}
+.tab.active{color:#38bdf8;border-bottom-color:#38bdf8;}
+
+/* ── LAYOUT ── */
+main{padding:16px 20px;max-width:1700px;margin:0 auto;}
+.panel{display:none;}
+.panel.active{display:flex;gap:14px;}
+#panel-amr.active,#panel-timeline.active{display:block;}
+
+/* ── CARD ── */
+.card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,.05);}
+.card-title{font-size:0.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;}
+
+/* ── CONTROLS ── */
+.controls{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
+.ctrl-lbl{font-size:0.72rem;font-weight:700;color:var(--muted);}
+.btn-group{display:flex;gap:0;}
+.btn-group button{
+  border:1px solid #d1d5db;background:#fff;color:var(--text);
+  padding:4px 11px;font-size:0.75rem;cursor:pointer;transition:all .12s;
+}
+.btn-group button:first-child{border-radius:6px 0 0 6px;}
+.btn-group button:last-child{border-radius:0 6px 6px 0;}
+.btn-group button+button{border-left:none;}
+.btn-group button.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+
+/* ── TREE ── */
+#tree-wrap{flex:1;min-width:0;}
+#tree-svg{width:100%;border:1px solid var(--border);border-radius:8px;background:#fafbfc;display:block;}
+.legend{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.leg-item{display:flex;align-items:center;gap:4px;font-size:0.72rem;}
+.leg-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+
+/* ── DETAIL ── */
+#detail-panel{width:320px;flex-shrink:0;}
+.placeholder{text-align:center;padding:50px 20px;color:var(--muted);font-size:.82rem;}
+.placeholder-icon{font-size:2.5rem;display:block;margin-bottom:8px;}
+.d-id{font-size:1.6rem;font-weight:800;letter-spacing:-1px;}
+.d-sub{font-size:.75rem;color:var(--muted);margin-bottom:12px;}
+.d-section{margin-bottom:12px;}
+.d-section-title{font-size:.65rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px;}
+.d-row{display:flex;justify-content:space-between;align-items:flex-start;padding:3px 0;border-bottom:1px solid #f1f5f9;gap:6px;}
+.d-row:last-child{border:none;}
+.d-key{font-size:.74rem;color:var(--muted);flex-shrink:0;}
+.d-val{font-size:.74rem;font-weight:600;text-align:right;}
+.carb-pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.68rem;font-weight:800;color:#fff;}
+.gene-tags{display:flex;flex-wrap:wrap;gap:3px;margin-top:3px;}
+.gene-tag{padding:2px 6px;border-radius:4px;font-size:.65rem;font-weight:600;border:1px solid;}
+
+/* ── AMR HEATMAP ── */
+#heatmap-wrap{overflow:auto;}
+#heatmap-svg text{font-family:'Segoe UI',system-ui,sans-serif;}
+
+/* ── TIMELINE ── */
+#timeline-wrap{overflow:hidden;}
+
+/* ── TOOLTIP ── */
+#tip{
+  position:fixed;background:rgba(15,23,42,.93);color:#fff;
+  padding:8px 12px;border-radius:8px;font-size:.75rem;pointer-events:none;
+  z-index:9999;max-width:240px;line-height:1.5;display:none;
+  box-shadow:0 4px 20px rgba(0,0,0,.35);
+}
+#tip strong{display:block;font-size:.82rem;margin-bottom:3px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <div>
+      <h1>🦠 Carbapenem-Resistant <em>Acinetobacter baumannii</em><br>Outbreak Investigation Dashboard</h1>
+      <div class="header-meta">EURGen-RefLabCap Multidisciplinary EQA Workshop · January 2024 · Statens Serum Institut / DTU</div>
+    </div>
+    <div class="badge-dtu">🔬 EQA Exercise Data · Jan 2024</div>
+  </div>
+  <div class="stats-bar" id="stats-bar">
+    <div class="stat"><span class="stat-val" id="s-total">—</span><span class="stat-lbl">Isolates</span></div>
+    <div class="stat"><span class="stat-val" id="s-hosp">—</span><span class="stat-lbl">Hospitals</span></div>
+    <div class="stat"><span class="stat-val" id="s-st2">—</span><span class="stat-lbl">ST2 (Pasteur)</span></div>
+    <div class="stat"><span class="stat-val" id="s-oxa23">—</span><span class="stat-lbl">OXA-23 carriers</span></div>
+    <div class="stat"><span class="stat-val" id="s-genes">—</span><span class="stat-lbl">AMR genes found</span></div>
+    <div class="stat"><span class="stat-val">GTR+G · 1000 BS</span><span class="stat-lbl">Phylogeny method</span></div>
+  </div>
+</header>
+
+<nav>
+  <button class="tab active" onclick="switchTab('phylogeny')">🌳 Phylogeny</button>
+  <button class="tab" onclick="switchTab('amr')">💊 AMR Profile</button>
+  <button class="tab" onclick="switchTab('timeline')">📅 Timeline</button>
+  <button class="tab" onclick="switchTab('snp')">🔢 SNP Matrix</button>
+</nav>
+
+<main>
+  <div class="panel active" id="panel-phylogeny">
+    <div class="card" id="tree-wrap">
+      <div class="card-title">Maximum Likelihood Tree — IQ-TREE2 (GTR+G, 1000 ultrafast bootstrap) on Parsnp core-genome SNPs</div>
+      <div class="controls">
+        <span class="ctrl-lbl">Color by</span>
+        <div class="btn-group" id="cmode-btns">
+          <button class="active" onclick="setColor('hospital')">Hospital</button>
+          <button onclick="setColor('carbapenemase')">Carbapenemase</button>
+          <button onclick="setColor('mlst')">MLST</button>
+          <button onclick="setColor('cgmlst')">cgMLST</button>
+        </div>
+        <span class="ctrl-lbl" style="margin-left:6px">Layout</span>
+        <div class="btn-group" id="layout-btns">
+          <button class="active" onclick="setLayout('cladogram')">Cladogram</button>
+          <button onclick="setLayout('phylogram')">Phylogram</button>
+        </div>
+        <span class="ctrl-lbl" style="margin-left:6px">Bootstrap</span>
+        <div class="btn-group">
+          <button id="bs-btn" class="active" onclick="toggleBS()">Show</button>
+        </div>
+      </div>
+      <svg id="tree-svg"></svg>
+      <div class="legend" id="legend"></div>
+      <div style="margin-top:8px;font-size:.68rem;color:var(--muted)">
+        Bootstrap circles: <span style="color:#16a34a">●</span> ≥95 &nbsp;
+        <span style="color:#ca8a04">●</span> 70–94 &nbsp;
+        <span style="color:#dc2626">●</span> 50–69 &nbsp;
+        (hidden if &lt;50)
+      </div>
+    </div>
+    <div class="card" id="detail-panel">
+      <div class="card-title">Sample Details</div>
+      <div id="detail-content">
+        <div class="placeholder">
+          <span class="placeholder-icon">🔬</span>
+          Click a node on the tree<br>to view sample details
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-amr">
+    <div class="card">
+      <div class="card-title">Antimicrobial Resistance Gene Matrix — Abricate / CARD (≥90% identity, ≥80% coverage)</div>
+      <div id="heatmap-wrap"></div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-timeline">
+    <div class="card">
+      <div class="card-title">Sample Collection Timeline by Hospital</div>
+      <div id="timeline-wrap"></div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-snp">
+    <div class="card">
+      <div class="card-title">Pairwise SNP Distance Matrix (IQ-TREE ML distances × 4 Mb genome)</div>
+      <p style="font-size:.72rem;color:var(--muted);margin-bottom:8px">Colour scale: white = 0 SNPs → deep red = many SNPs. Click a cell to compare two samples.</p>
+      <div id="snp-wrap"></div>
+    </div>
+  </div>
+</main>
+
+<div id="tip"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// COLOUR MAPS
+// ══════════════════════════════════════════════════════════════
+const HOSP = {
+  'Hospital A':'#e41a1c','Hospital B':'#377eb8','Hospital C':'#4daf4a',
+  'Hospital D':'#984ea3','Hospital E':'#ff7f00','Hospital F':'#a65628',
+};
+const CARB = {'OXA-23':'#e41a1c','NDM-4':'#7c3aed','NDM-2':'#ea580c'};
+const MLST_COL = {'ST2':'#377eb8','ST103':'#e41a1c','1017':'#94a3b8','—':'#d1d5db'};
+const GC_COL = {
+  'Carbapenemase':'#e41a1c','Cephalosporinase (AmpC)':'#f97316',
+  'Aminoglycoside':'#16a34a','Beta-lactamase':'#7c3aed',
+  'Efflux pump':'#0284c7','Fluoroquinolone':'#2563eb',
+  'Tetracycline':'#854d0e','Sulfonamide':'#db2777',
+  'Trimethoprim':'#0d9488','Other':'#94a3b8',
+};
+const CGMLST_COL = {};
+function cgColor(v){
+  if(!CGMLST_COL[v]){
+    const p=['#8dd3c7','#ffffb3','#bebada','#fb8072','#80b1d3','#fdb462',
+             '#b3de69','#fccde5','#d9d9d9','#bc80bd','#ccebc5','#ffed6f'];
+    CGMLST_COL[v]=p[Object.keys(CGMLST_COL).length%p.length];
+  }
+  return CGMLST_COL[v];
+}
+
+function getNodeColor(sid, mode){
+  const s = DATA.samples[sid];
+  if(!s) return '#ccc';
+  if(mode==='hospital') return HOSP[s.hospital]||'#aaa';
+  if(mode==='carbapenemase') return CARB[s.carbapenemase]||'#94a3b8';
+  if(mode==='mlst') return MLST_COL[s.mlst_pasteur]||'#aaa';
+  if(mode==='cgmlst') return cgColor(s.cgmlst||'—');
+  return '#aaa';
+}
+
+// ══════════════════════════════════════════════════════════════
+// NEWICK PARSER  (handles bootstrap internal labels)
+// ══════════════════════════════════════════════════════════════
+function parseNewick(s){
+  const anc=[], tokens=s.split(/\s*(;|\(|\)|,|:)\s*/);
+  let tree={};
+  for(let i=0;i<tokens.length;i++){
+    const tok=tokens[i];
+    if(tok==='('){
+      const sub={};tree.children=[sub];anc.push(tree);tree=sub;
+    }else if(tok===','){
+      const sub={};anc[anc.length-1].children.push(sub);tree=sub;
+    }else if(tok===')'){
+      tree=anc.pop();
+    }else if(tok!==':'&&tok!==''){
+      const prev=tokens[i-1];
+      if(prev===')'||prev==='('||prev===',') tree.name=tok;
+      else if(prev===':') tree.length=parseFloat(tok);
+    }
+  }
+  return tree;
+}
+
+// ══════════════════════════════════════════════════════════════
+// PHYLOGENETIC TREE
+// ══════════════════════════════════════════════════════════════
+let colorMode='hospital', layoutMode='cladogram', showBS=true, selectedSid=null;
+
+function setColor(m){
+  colorMode=m;
+  document.querySelectorAll('#cmode-btns button').forEach(b=>{
+    b.classList.toggle('active',b.textContent.toLowerCase().includes(m.substring(0,4)));
+  });
+  renderTree(); renderLegend();
+}
+function setLayout(m){
+  layoutMode=m;
+  document.querySelectorAll('#layout-btns button').forEach(b=>{
+    b.classList.toggle('active',b.textContent.toLowerCase()===m);
+  });
+  renderTree();
+}
+function toggleBS(){
+  showBS=!showBS;
+  document.getElementById('bs-btn').classList.toggle('active',showBS);
+  renderTree();
+}
+
+function renderTree(){
+  const svg=d3.select('#tree-svg');
+  svg.selectAll('*').remove();
+
+  const W=document.getElementById('tree-wrap').clientWidth-28;
+  const m={top:12,right:240,bottom:12,left:10};
+  const w=W-m.left-m.right;
+
+  const nwkRoot=parseNewick(DATA.tree_nwk);
+  const root=d3.hierarchy(nwkRoot,d=>d.children);
+
+  const nLeaves=root.leaves().length;
+  const rowH=Math.max(16,Math.min(24,700/nLeaves));
+  const H=nLeaves*rowH+m.top+m.bottom;
+
+  svg.attr('height',H);
+  const g=svg.append('g').attr('transform',`translate(${m.left},${m.top})`);
+
+  // Compute branch positions for phylogram
+  if(layoutMode==='phylogram'){
+    root.each(d=>{d.bl=d.data.length||0;});
+    root.each(d=>{d.rd=d.parent?d.parent.rd+d.bl:0;});
+    const maxRd=Math.max(...root.leaves().map(d=>d.rd));
+    root.each(d=>{d._phyloY=maxRd>0?d.rd/maxRd*w:0;});
+  }
+
+  const cluster=d3.cluster().size([H-m.top-m.bottom,w]);
+  cluster(root);
+
+  if(layoutMode==='phylogram'){root.each(d=>{d.y=d._phyloY;});}
+
+  // Links (elbow)
+  g.selectAll('.lnk')
+    .data(root.descendants().slice(1))
+    .join('path').attr('class','lnk')
+    .attr('fill','none').attr('stroke','#d1d5db').attr('stroke-width',1.2)
+    .attr('d',d=>`M${d.y},${d.x}L${d.parent.y},${d.x}L${d.parent.y},${d.parent.x}`);
+
+  // Bootstrap circles at internal nodes
+  if(showBS){
+    g.selectAll('.bs')
+      .data(root.descendants().filter(d=>d.children&&d.data.name))
+      .join('circle').attr('class','bs')
+      .attr('cx',d=>d.y).attr('cy',d=>d.x)
+      .attr('r',d=>{const v=+d.data.name;return v>=50?4.5:0;})
+      .attr('fill',d=>{
+        const v=+d.data.name;
+        if(v>=95)return '#16a34a';
+        if(v>=70)return '#ca8a04';
+        return '#dc2626';
+      })
+      .attr('stroke','#fff').attr('stroke-width',1)
+      .on('mouseover',(e,d)=>showTip(e,`Bootstrap: ${d.data.name}%`))
+      .on('mousemove',(e)=>moveTip(e))
+      .on('mouseout',hideTip);
+  }
+
+  // Leaf nodes
+  const leaves=g.selectAll('.leaf')
+    .data(root.leaves())
+    .join('g').attr('class','leaf')
+    .attr('transform',d=>`translate(${d.y},${d.x})`)
+    .style('cursor','pointer')
+    .on('click',(e,d)=>showDetail(d.data.name))
+    .on('mouseover',(e,d)=>showSampleTip(e,d.data.name))
+    .on('mousemove',(e)=>moveTip(e))
+    .on('mouseout',hideTip);
+
+  leaves.append('circle')
+    .attr('r',6).attr('fill',d=>getNodeColor(d.data.name,colorMode))
+    .attr('stroke',d=>selectedSid===d.data.name?'#1d4ed8':'#fff')
+    .attr('stroke-width',d=>selectedSid===d.data.name?3:1.5)
+    .attr('id',d=>'n-'+d.data.name);
+
+  const s=DATA.samples;
+  leaves.append('text')
+    .attr('x',10).attr('dy','0.35em')
+    .attr('font-size','11px')
+    .attr('font-weight',d=>selectedSid===d.data.name?'700':'400')
+    .attr('fill',d=>selectedSid===d.data.name?'#1d4ed8':'#374151')
+    .text(d=>{
+      const smp=s[d.data.name];
+      if(!smp) return d.data.name;
+      const carb=smp.carbapenemase!=='—'?` [${smp.carbapenemase}]`:'';
+      return `${d.data.name}  ${smp.hospital}·${smp.mlst_pasteur}${carb}`;
+    });
+}
+
+function renderLegend(){
+  const el=document.getElementById('legend');
+  el.innerHTML='';
+  let items=[];
+  if(colorMode==='hospital') items=Object.entries(HOSP);
+  else if(colorMode==='carbapenemase') items=Object.entries(CARB);
+  else if(colorMode==='mlst') items=Object.entries(MLST_COL).filter(([k])=>k!=='—');
+  else if(colorMode==='cgmlst'){
+    const seen={};
+    Object.values(DATA.samples).forEach(s=>{if(s.cgmlst&&s.cgmlst!=='—')seen[s.cgmlst]=cgColor(s.cgmlst);});
+    items=Object.entries(seen);
+  }
+  items.forEach(([lbl,col])=>{
+    el.innerHTML+=`<div class="leg-item"><div class="leg-dot" style="background:${col}"></div><span>${lbl}</span></div>`;
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// SAMPLE DETAIL PANEL
+// ══════════════════════════════════════════════════════════════
+function showDetail(sid){
+  selectedSid=sid;
+  const s=DATA.samples[sid];
+  if(!s) return;
+
+  // Update node highlight
+  d3.selectAll('.leaf circle').attr('stroke','#fff').attr('stroke-width',1.5);
+  d3.select('#n-'+sid).attr('stroke','#1d4ed8').attr('stroke-width',3);
+  d3.selectAll('.leaf text').attr('font-weight','400').attr('fill','#374151');
+  d3.select('#n-'+sid).select(function(){return this.parentNode.querySelector('text');});
+
+  // Closest relative from SNP matrix
+  let closestSid='—', closestSNP='—';
+  if(DATA.snp_matrix){
+    const idx=DATA.snp_matrix.samples.indexOf(sid);
+    if(idx>=0){
+      let minD=Infinity;
+      DATA.snp_matrix.samples.forEach((s2,j)=>{
+        if(s2!==sid){const d=DATA.snp_matrix.matrix[idx][j];if(d<minD){minD=d;closestSid=s2;closestSNP=d;}}
+      });
+    }
+  }
+
+  const carbCol=CARB[s.carbapenemase]||'#94a3b8';
+  const carbBadge=`<span class="carb-pill" style="background:${carbCol}">${s.carbapenemase}</span>`;
+  const hospCol=HOSP[s.hospital]||'#374151';
+  const country=s.country==='None'?'—':s.country;
+
+  // AMR gene tags by category
+  const catOrder=['Carbapenemase','Beta-lactamase','Cephalosporinase (AmpC)','Aminoglycoside','Efflux pump','Fluoroquinolone','Tetracycline','Sulfonamide','Trimethoprim','Other'];
+  const bycat={};
+  (s.amr_genes||[]).forEach(g=>{const c=DATA.gene_categories[g]||'Other';(bycat[c]=bycat[c]||[]).push(g);});
+  let tags='';
+  catOrder.forEach(cat=>{
+    if(bycat[cat]){
+      const col=GC_COL[cat]||'#94a3b8';
+      bycat[cat].forEach(g=>{
+        const n=g.replace('Acinetobacter_baumannii_','').replace(/_/g,' ');
+        tags+=`<span class="gene-tag" style="color:${col};border-color:${col}30;background:${col}12">${n}</span>`;
+      });
+    }
+  });
+
+  document.getElementById('detail-content').innerHTML=`
+    <div style="margin-bottom:12px">
+      <div class="d-id">${sid}</div>
+      <div class="d-sub">Patient: ${s.patient} · Inject ${s.inject}</div>
+    </div>
+    <div class="d-section">
+      <div class="d-section-title">Molecular Typing</div>
+      <div class="d-row"><span class="d-key">MLST (Pasteur)</span><span class="d-val">${s.mlst_pasteur}</span></div>
+      <div class="d-row"><span class="d-key">MLST (Oxford)</span><span class="d-val">${s.mlst_oxford}</span></div>
+      <div class="d-row"><span class="d-key">cgMLST</span><span class="d-val">${s.cgmlst}</span></div>
+      <div class="d-row"><span class="d-key">K Locus</span><span class="d-val">${s.k_locus}</span></div>
+      <div class="d-row"><span class="d-key">OC Locus</span><span class="d-val">${s.o_locus}</span></div>
+      ${s.inc_types?`<div class="d-row"><span class="d-key">Plasmid Inc</span><span class="d-val">${s.inc_types}</span></div>`:''}
+    </div>
+    <div class="d-section">
+      <div class="d-section-title">Epidemiology</div>
+      <div class="d-row"><span class="d-key">Hospital</span><span class="d-val" style="color:${hospCol};font-weight:800">${s.hospital}</span></div>
+      <div class="d-row"><span class="d-key">Travel history</span><span class="d-val">${country}</span></div>
+      <div class="d-row"><span class="d-key">Sample date</span><span class="d-val">${s.date}</span></div>
+    </div>
+    <div class="d-section">
+      <div class="d-section-title">Resistance</div>
+      <div class="d-row"><span class="d-key">Carbapenemase</span><span class="d-val">${carbBadge}</span></div>
+      <div class="d-row"><span class="d-key">Phenotype</span><span class="d-val" style="font-size:.68rem">${s.antibiogram}</span></div>
+    </div>
+    <div class="d-section">
+      <div class="d-section-title">Closest relative</div>
+      <div class="d-row">
+        <span class="d-key">Sample</span>
+        <span class="d-val" style="color:#1d4ed8;cursor:pointer" onclick="showDetail('${closestSid}')">${closestSid}</span>
+      </div>
+      <div class="d-row"><span class="d-key">SNP distance</span><span class="d-val" style="color:#16a34a;font-weight:800">${closestSNP} SNPs</span></div>
+    </div>
+    <div class="d-section">
+      <div class="d-section-title">AMR Genes (${(s.amr_genes||[]).length})</div>
+      <div class="gene-tags">${tags||'<span style="color:var(--muted);font-size:.72rem">None detected</span>'}</div>
+    </div>
+    <div style="margin-top:10px;font-size:.65rem;color:var(--muted)">ENA: ${s.err}</div>
+  `;
+}
+
+// ══════════════════════════════════════════════════════════════
+// AMR HEATMAP
+// ══════════════════════════════════════════════════════════════
+function renderHeatmap(){
+  const wrap=document.getElementById('heatmap-wrap');
+  wrap.innerHTML='';
+
+  // Phylogenetic order
+  const root=d3.hierarchy(parseNewick(DATA.tree_nwk),d=>d.children);
+  d3.cluster()(root);
+  const phyloOrder=root.leaves().map(l=>l.data.name).filter(n=>DATA.samples[n]);
+
+  const catOrder=['Carbapenemase','Beta-lactamase','Cephalosporinase (AmpC)',
+                  'Aminoglycoside','Efflux pump','Fluoroquinolone',
+                  'Tetracycline','Sulfonamide','Trimethoprim','Other'];
+  const genes=[...DATA.all_genes].sort((a,b)=>{
+    const ia=catOrder.indexOf(DATA.gene_categories[a]||'Other');
+    const ib=catOrder.indexOf(DATA.gene_categories[b]||'Other');
+    if(ia!==ib)return ia-ib;
+    return a.localeCompare(b);
+  });
+
+  const cW=18,cH=18,lW=82,top=120;
+  const W=lW+genes.length*cW+20;
+  const H=top+phyloOrder.length*cH+16;
+
+  const svg=d3.select('#heatmap-wrap').append('svg').attr('id','heatmap-svg')
+    .attr('width',W).attr('height',H);
+  const g=svg.append('g').attr('transform',`translate(${lW},${top})`);
+
+  // Category headers
+  let prevCat=null,catStart=0;
+  genes.forEach((gene,i)=>{
+    const cat=DATA.gene_categories[gene]||'Other';
+    if(cat!==prevCat){
+      if(prevCat!==null){
+        const cw=(i-catStart)*cW;
+        g.append('rect').attr('x',catStart*cW).attr('y',-top).attr('width',cw).attr('height',14)
+          .attr('fill',GC_COL[prevCat]||'#ccc').attr('rx',2);
+        if(cw>20){
+          g.append('text').attr('x',catStart*cW+cw/2).attr('y',-top+10)
+            .attr('text-anchor','middle').attr('font-size','8').attr('fill','#fff').attr('font-weight','700')
+            .text(prevCat.split(' ')[0]);
+        }
+      }
+      prevCat=cat; catStart=i;
+    }
+  });
+  const lastW=(genes.length-catStart)*cW;
+  g.append('rect').attr('x',catStart*cW).attr('y',-top).attr('width',lastW).attr('height',14)
+    .attr('fill',GC_COL[prevCat]||'#ccc').attr('rx',2);
+  if(lastW>20){
+    g.append('text').attr('x',catStart*cW+lastW/2).attr('y',-top+10)
+      .attr('text-anchor','middle').attr('font-size','8').attr('fill','#fff').attr('font-weight','700')
+      .text(prevCat.split(' ')[0]);
+  }
+
+  // Gene column labels (rotated)
+  g.selectAll('.glbl').data(genes).join('text').attr('class','glbl')
+    .attr('x',(d,i)=>i*cW+cW/2).attr('y',-16)
+    .attr('transform',(d,i)=>`rotate(-55,${i*cW+cW/2},-16)`)
+    .attr('text-anchor','end').attr('font-size','9')
+    .attr('fill',d=>GC_COL[DATA.gene_categories[d]]||'#555')
+    .text(d=>d.replace('Acinetobacter_baumannii_','Ab_'));
+
+  // Rows
+  phyloOrder.forEach((sid,row)=>{
+    const smp=DATA.samples[sid];
+    const y=row*cH;
+    g.append('rect').attr('x',0).attr('y',y)
+      .attr('width',genes.length*cW).attr('height',cH)
+      .attr('fill',row%2===0?'#f8fafc':'#fff');
+
+    // Sample label
+    svg.append('text').attr('x',lW-5).attr('y',top+y+cH/2+4)
+      .attr('text-anchor','end').attr('font-size','11').attr('font-weight','700')
+      .attr('fill',HOSP[smp?.hospital]||'#374151')
+      .style('cursor','pointer')
+      .on('click',()=>{ switchTab('phylogeny'); setTimeout(()=>showDetail(sid),50); })
+      .text(sid);
+
+    genes.forEach((gene,col)=>{
+      const has=(smp?.amr_genes||[]).includes(gene);
+      if(has){
+        const col_c=GC_COL[DATA.gene_categories[gene]]||'#94a3b8';
+        g.append('rect').attr('x',col*cW+1).attr('y',y+1)
+          .attr('width',cW-2).attr('height',cH-2).attr('fill',col_c).attr('rx',2).attr('opacity',.85)
+          .on('mouseover',(e)=>showTip(e,`${sid}  ·  ${gene}`))
+          .on('mousemove',(e)=>moveTip(e)).on('mouseout',hideTip);
+      }
+    });
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// TIMELINE
+// ══════════════════════════════════════════════════════════════
+function renderTimeline(){
+  const wrap=document.getElementById('timeline-wrap');
+  wrap.innerHTML='';
+  const samps=Object.values(DATA.samples).filter(s=>s.date&&s.date!=='—').sort((a,b)=>a.date.localeCompare(b.date));
+  const hospitals=[...new Set(samps.map(s=>s.hospital))].sort();
+  const m={top:20,right:40,bottom:80,left:60};
+  const W=Math.min(1200,document.getElementById('timeline-wrap').clientWidth||900);
+  const H=320;
+  const w=W-m.left-m.right,h=H-m.top-m.bottom;
+
+  const svg=d3.select('#timeline-wrap').append('svg').attr('width',W).attr('height',H)
+    .append('g').attr('transform',`translate(${m.left},${m.top})`);
+
+  const dates=samps.map(s=>new Date(s.date));
+  const x=d3.scaleTime().domain(d3.extent(dates)).range([0,w]).nice();
+  const y=d3.scalePoint().domain(hospitals).range([0,h]).padding(.5);
+
+  svg.append('g').attr('transform',`translate(0,${h})`).call(d3.axisBottom(x).ticks(d3.timeDay.every(5)).tickFormat(d3.timeFormat('%d %b')))
+    .selectAll('text').attr('transform','rotate(-40)').attr('text-anchor','end').attr('font-size','10');
+  svg.append('g').call(d3.axisLeft(y).tickSize(0))
+    .selectAll('text').attr('font-size','12').attr('font-weight','700')
+    .attr('fill',d=>HOSP[d]||'#374151');
+
+  hospitals.forEach(h2=>{
+    svg.append('line').attr('x1',0).attr('x2',w)
+      .attr('y1',y(h2)).attr('y2',y(h2))
+      .attr('stroke','#f1f5f9').attr('stroke-width',1);
+  });
+
+  svg.selectAll('.dot').data(samps).join('circle').attr('class','dot')
+    .attr('cx',d=>x(new Date(d.date))).attr('cy',d=>y(d.hospital))
+    .attr('r',8).attr('fill',d=>HOSP[d.hospital]||'#aaa')
+    .attr('stroke','#fff').attr('stroke-width',2).attr('opacity',.88)
+    .style('cursor','pointer')
+    .on('mouseover',(e,d)=>showSampleTip(e,d.id))
+    .on('mousemove',(e)=>moveTip(e)).on('mouseout',hideTip)
+    .on('click',(e,d)=>{switchTab('phylogeny');setTimeout(()=>showDetail(d.id),60);});
+}
+
+// ══════════════════════════════════════════════════════════════
+// SNP MATRIX HEATMAP
+// ══════════════════════════════════════════════════════════════
+function renderSNP(){
+  const wrap=document.getElementById('snp-wrap');
+  wrap.innerHTML='';
+  if(!DATA.snp_matrix) return;
+
+  const samps=DATA.snp_matrix.samples;
+  const mat=DATA.snp_matrix.matrix;
+  const n=samps.length;
+  const cSize=Math.min(22,Math.floor((document.body.clientWidth-80)/n));
+  const lbl=70;
+
+  const maxVal=Math.max(...mat.flat().filter(v=>v>0));
+  const colorScale=d3.scaleSequential(d3.interpolateReds).domain([0,Math.min(maxVal,200000)]);
+
+  const W=lbl+n*cSize+10, H=lbl+n*cSize+10;
+  const svg=d3.select('#snp-wrap').append('svg').attr('width',W).attr('height',H);
+  const g=svg.append('g').attr('transform',`translate(${lbl},${lbl})`);
+
+  // Column labels
+  samps.forEach((s,i)=>{
+    svg.append('text').attr('x',lbl+i*cSize+cSize/2).attr('y',lbl-5)
+      .attr('transform',`rotate(-55,${lbl+i*cSize+cSize/2},${lbl-5})`)
+      .attr('text-anchor','end').attr('font-size','9')
+      .attr('fill',DATA.samples[s]?HOSP[DATA.samples[s].hospital]:'#555')
+      .text(s);
+    svg.append('text').attr('x',lbl-3).attr('y',lbl+i*cSize+cSize/2+4)
+      .attr('text-anchor','end').attr('font-size','9')
+      .attr('fill',DATA.samples[s]?HOSP[DATA.samples[s].hospital]:'#555')
+      .text(s);
+  });
+
+  // Cells
+  samps.forEach((s1,i)=>{
+    samps.forEach((s2,j)=>{
+      const v=mat[i][j];
+      g.append('rect').attr('x',j*cSize).attr('y',i*cSize)
+        .attr('width',cSize-1).attr('height',cSize-1)
+        .attr('fill',i===j?'#e2e8f0':colorScale(v)).attr('rx',1)
+        .on('mouseover',(e)=>showTip(e,`${s1} vs ${s2}: ~${v.toLocaleString()} SNPs`))
+        .on('mousemove',(e)=>moveTip(e)).on('mouseout',hideTip);
+    });
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// TOOLTIP
+// ══════════════════════════════════════════════════════════════
+function showTip(e,html){
+  const t=document.getElementById('tip');
+  t.innerHTML=html; t.style.display='block'; moveTip(e);
+}
+function showSampleTip(e,sid){
+  const s=DATA.samples[sid];
+  if(!s) return showTip(e,sid);
+  showTip(e,`<strong>${sid}</strong>${s.hospital} · ${s.mlst_pasteur} · ${s.carbapenemase}<br><span style="opacity:.7">${s.date} · ${s.country!=='None'?s.country:'No travel'}</span>`);
+}
+function moveTip(e){
+  const t=document.getElementById('tip');
+  t.style.left=(e.clientX+14)+'px';
+  t.style.top=(e.clientY-10)+'px';
+}
+function hideTip(){document.getElementById('tip').style.display='none';}
+
+// ══════════════════════════════════════════════════════════════
+// STATS BAR
+// ══════════════════════════════════════════════════════════════
+function renderStats(){
+  const s=DATA.samples;
+  const vals=Object.values(s);
+  document.getElementById('s-total').textContent=vals.length;
+  document.getElementById('s-hosp').textContent=new Set(vals.map(x=>x.hospital)).size;
+  document.getElementById('s-st2').textContent=vals.filter(x=>x.mlst_pasteur==='ST2').length;
+  document.getElementById('s-oxa23').textContent=vals.filter(x=>x.carbapenemase==='OXA-23').length;
+  document.getElementById('s-genes').textContent=DATA.all_genes.length;
+}
+
+// ══════════════════════════════════════════════════════════════
+// TAB SWITCHING
+// ══════════════════════════════════════════════════════════════
+function switchTab(tab){
+  document.querySelectorAll('.tab').forEach((b,i)=>{
+    const names=['phylogeny','amr','timeline','snp'];
+    b.classList.toggle('active',names[i]===tab);
+  });
+  document.querySelectorAll('.panel').forEach(p=>{
+    p.classList.toggle('active',p.id==='panel-'+tab);
+  });
+  if(tab==='amr') renderHeatmap();
+  if(tab==='timeline') renderTimeline();
+  if(tab==='snp') renderSNP();
+}
+
+// ══════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════
+let DATA=null;
+fetch('app_data.json')
+  .then(r=>r.json())
+  .then(d=>{
+    DATA=d;
+    // Pre-build cgMLST colours
+    Object.values(d.samples).forEach(s=>cgColor(s.cgmlst||'—'));
+    renderStats();
+    renderTree();
+    renderLegend();
+  })
+  .catch(()=>{
+    document.querySelector('main').innerHTML=`<div class="card" style="padding:40px;text-align:center">
+      <h2 style="color:#e41a1c">⚠️ Data file not found</h2>
+      <p style="margin-top:8px;color:var(--muted)">Serve this folder with:<br>
+      <code style="background:#f8fafc;padding:4px 8px;border-radius:4px;font-size:.85rem">cd web && python3 -m http.server 8888</code></p>
+    </div>`;
+  });
+</script>
+</body>
+</html>

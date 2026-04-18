@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Outbreak Investigation Report — CRAB EQA 2024</title>
+<style>
+:root{--dark:#0f2044;--accent:#2563eb;--light:#f0f4ff;--text:#1e293b;--muted:#64748b;--green:#16a34a;--amber:#d97706;--red:#dc2626;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#f8fafc;color:var(--text);}
+header{background:linear-gradient(135deg,#0f2044,#1e3a8a,#2563eb);color:#fff;padding:48px 24px;text-align:center;}
+header h1{font-size:2rem;font-weight:800;line-height:1.2;max-width:800px;margin:0 auto;}
+header h1 em{color:#93c5fd;font-style:italic;}
+header p{margin-top:12px;opacity:.75;font-size:.95rem;max-width:700px;margin:12px auto 0;}
+.badge-row{display:flex;justify-content:center;gap:10px;margin-top:20px;flex-wrap:wrap;}
+.badge{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:8px;padding:6px 14px;font-size:.78rem;font-weight:600;}
+nav{background:#fff;border-bottom:1px solid #e2e8f0;padding:12px 20px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.05);}
+.nav-inner{max-width:1000px;margin:0 auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.nav-link{font-size:.8rem;font-weight:600;color:var(--accent);text-decoration:none;padding:5px 12px;border-radius:6px;white-space:nowrap;}
+.nav-link:hover{background:var(--light);}
+.nav-home{color:var(--muted);}
+main{max-width:1000px;margin:0 auto;padding:48px 20px;}
+h2.section-title{font-size:1.35rem;font-weight:800;color:var(--dark);margin:48px 0 16px;padding-bottom:10px;border-bottom:3px solid var(--accent);}
+h3.sub-title{font-size:1.05rem;font-weight:700;margin:28px 0 10px;color:var(--dark);}
+p{font-size:.9rem;line-height:1.75;color:var(--text);margin-bottom:12px;}
+p em{font-style:italic;}
+ul,ol{font-size:.9rem;line-height:1.8;padding-left:22px;margin-bottom:12px;color:var(--text);}
+li{margin-bottom:4px;}
+.callout{background:var(--light);border-left:4px solid var(--accent);border-radius:0 10px 10px 0;padding:16px 20px;margin:20px 0;}
+.callout.green{background:#f0fdf4;border-color:var(--green);}
+.callout.amber{background:#fffbeb;border-color:var(--amber);}
+.callout.red{background:#fef2f2;border-color:var(--red);}
+.callout h4{font-size:.85rem;font-weight:700;margin-bottom:6px;}
+.callout.green h4{color:var(--green);}
+.callout.amber h4{color:var(--amber);}
+.callout.red h4{color:var(--red);}
+.callout h4{color:var(--accent);}
+.callout p{margin-bottom:0;font-size:.85rem;}
+.inject-block{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px 28px;margin:20px 0;box-shadow:0 2px 8px rgba(0,0,0,.04);}
+.inject-header{display:flex;align-items:center;gap:14px;margin-bottom:16px;}
+.inject-num{width:40px;height:40px;border-radius:50%;background:var(--accent);color:#fff;font-weight:800;font-size:.9rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.inject-header h3{font-size:1rem;font-weight:700;margin:0;}
+.inject-header span{font-size:.8rem;color:var(--muted);}
+.data-table{width:100%;border-collapse:collapse;font-size:.82rem;margin:16px 0;}
+.data-table th{background:var(--dark);color:#fff;padding:8px 12px;text-align:left;font-weight:600;}
+.data-table td{padding:8px 12px;border-bottom:1px solid #e2e8f0;}
+.data-table tr:nth-child(even) td{background:#f8fafc;}
+.data-table tr:hover td{background:var(--light);}
+.cluster-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0;}
+@media(max-width:600px){.cluster-grid{grid-template-columns:1fr;}}
+.cluster-box{background:#fff;border:2px solid;border-radius:12px;padding:20px;}
+.cluster-box.a{border-color:#2563eb;}
+.cluster-box.b{border-color:#7c3aed;}
+.cluster-box.sporadic{border-color:#64748b;}
+.cluster-label{font-size:.75rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;}
+.cluster-box.a .cluster-label{color:#2563eb;}
+.cluster-box.b .cluster-label{color:#7c3aed;}
+.cluster-box.sporadic .cluster-label{color:#64748b;}
+.cluster-box h4{font-size:.95rem;font-weight:700;margin-bottom:8px;}
+.cluster-box p,.cluster-box li{font-size:.82rem;}
+.pill{display:inline-block;padding:2px 8px;border-radius:99px;font-size:.72rem;font-weight:700;}
+.pill-blue{background:#dbeafe;color:#1d4ed8;}
+.pill-purple{background:#ede9fe;color:#6d28d9;}
+.pill-green{background:#dcfce7;color:#15803d;}
+.pill-red{background:#fee2e2;color:#b91c1c;}
+.pill-gray{background:#f1f5f9;color:#475569;}
+.snp-stats{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0;}
+.snp-stat{background:var(--light);border-radius:8px;padding:8px 14px;text-align:center;flex:1;min-width:90px;}
+.snp-stat .val{font-size:1.1rem;font-weight:800;color:var(--accent);}
+.snp-stat .lbl{font-size:.7rem;color:var(--muted);}
+.pipeline-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:.85rem;}
+.pipeline-row:last-child{border-bottom:none;}
+.pipeline-tool{font-weight:700;color:var(--dark);min-width:140px;}
+.pipeline-arrow{color:var(--muted);}
+.amr-cats{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0;}
+.amr-cat{background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:8px 14px;font-size:.82rem;}
+.amr-cat .cat-name{font-weight:700;font-size:.78rem;color:var(--muted);}
+.amr-cat .cat-count{font-weight:800;font-size:1rem;color:var(--accent);}
+.survey-box{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:16px 20px;margin:10px 0;}
+.survey-q{font-size:.82rem;font-weight:700;color:var(--muted);margin-bottom:8px;}
+.survey-ans{display:flex;gap:8px;flex-wrap:wrap;}
+.survey-bar{background:#f1f5f9;border-radius:4px;padding:6px 10px;font-size:.8rem;}
+.survey-bar strong{color:var(--accent);}
+.timeline-event{display:flex;gap:14px;align-items:flex-start;padding:12px 0;border-bottom:1px solid #f1f5f9;}
+.timeline-event:last-child{border-bottom:none;}
+.tl-date{font-size:.75rem;font-weight:700;color:var(--accent);min-width:80px;padding-top:2px;}
+.tl-content{font-size:.85rem;}
+.tl-content strong{display:block;font-weight:700;margin-bottom:2px;}
+.conclusion-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:16px 0;}
+.concl-card{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:16px;}
+.concl-icon{font-size:1.4rem;margin-bottom:8px;}
+.concl-card h4{font-size:.88rem;font-weight:700;margin-bottom:6px;}
+.concl-card p{font-size:.8rem;color:var(--muted);margin:0;}
+.btn{display:inline-block;background:var(--accent);color:#fff;padding:9px 18px;border-radius:8px;text-decoration:none;font-size:.82rem;font-weight:600;transition:background .12s;margin-right:8px;margin-top:8px;}
+.btn:hover{background:#1d4ed8;}
+.btn-outline{background:transparent;color:var(--accent);border:2px solid var(--accent);}
+.btn-outline:hover{background:var(--accent);color:#fff;}
+footer{background:var(--dark);color:rgba(255,255,255,.6);text-align:center;padding:24px;font-size:.75rem;margin-top:60px;}
+footer a{color:#93c5fd;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Outbreak Investigation Report<br><em>CRAB Multi-Hospital Outbreak · EQA Exercise 2024</em></h1>
+  <p>Step-by-step analysis of the EURGen-RefLabCap EQA exercise — from initial epidemiological data to WGS-based cluster confirmation across six hospitals</p>
+  <div class="badge-row">
+    <span class="badge">Fictitious training scenario</span>
+    <span class="badge">36 WGS isolates</span>
+    <span class="badge">6 Hospitals · Country W</span>
+    <span class="badge">ST2 OXA-23 CRAB outbreak</span>
+  </div>
+</header>
+
+<nav>
+  <div class="nav-inner">
+    <a class="nav-link nav-home" href="index.html">← Home</a>
+    <a class="nav-link" href="#background">Background</a>
+    <a class="nav-link" href="#methods">Methods</a>
+    <a class="nav-link" href="#inject1">Inject 1</a>
+    <a class="nav-link" href="#inject2">Inject 2</a>
+    <a class="nav-link" href="#inject3">Inject 3</a>
+    <a class="nav-link" href="#results">Full Results</a>
+    <a class="nav-link" href="#conclusions">Conclusions</a>
+    <a class="btn" href="dashboard.html" style="padding:5px 14px;margin:0;font-size:.78rem;">Open Dashboard →</a>
+  </div>
+</nav>
+
+<main>
+
+<!-- =================== BACKGROUND =================== -->
+<h2 class="section-title" id="background">1. Background and Scenario</h2>
+
+<p>This report documents the analysis of a fictional multi-hospital outbreak of <em>Carbapenem-Resistant Acinetobacter baumannii</em> (CRAB) designed as part of the <strong>EURGen-RefLabCap Multidisciplinary WGS Training Workshop</strong>, conducted virtually in January 2024. The exercise was coordinated by Statens Serum Institut / DTU and challenged National Reference Laboratories (NRLs) from across Europe to integrate epidemiological and whole-genome sequencing (WGS) approaches to investigate a complex, multi-hospital outbreak scenario.</p>
+
+<div class="callout">
+  <h4>Scenario Setting</h4>
+  <p>A fictional National Reference Laboratory (NRL) in <strong>Country W</strong> receives clinical and epidemiological records for 71 <em>Acinetobacter baumannii</em> cases from six hospitals (Hospitals A–F) spanning January to December 2023. The NRL must determine whether an outbreak is occurring, how many clusters exist, which isolates are related, and how transmission may have spread between hospitals — potentially via patients with travel history to <strong>Country Z</strong>.</p>
+</div>
+
+<p><strong>All patient names, hospital identifiers, countries, and isolate data in this exercise are entirely fictitious</strong>, created specifically for training purposes. No real patient data or real outbreak information is represented here.</p>
+
+<h3 class="sub-title">Pathogen Profile: CRAB</h3>
+<p><em>Acinetobacter baumannii</em> is a Gram-negative opportunistic pathogen classified by the WHO as a critical-priority organism for the development of new antibiotics. Carbapenem-resistant strains (CRAB) — particularly those carrying OXA-type carbapenemases (most commonly OXA-23) — pose a severe threat in healthcare settings due to their ability to cause difficult-to-treat infections and their propensity for nosocomial transmission. The Global Clone 2 (GC2) lineage, typed as <strong>ST2 by the Pasteur MLST scheme</strong>, is the most globally disseminated CRAB clone and is the dominant lineage in this exercise.</p>
+
+
+<!-- =================== METHODS =================== -->
+<h2 class="section-title" id="methods">2. Bioinformatics Methods</h2>
+
+<h3 class="sub-title">Isolate Selection (Inject 1.1 / 1.2)</h3>
+<p>From the initial 71 clinical records, <strong>36 priority isolates</strong> were selected for WGS based on the following metadata criteria:</p>
+<ul>
+  <li>Hospital of admission and ward (ICU vs. general ward)</li>
+  <li>Sample collection date and patient hospitalization/discharge dates</li>
+  <li>Antibiogram pattern (especially carbapenem resistance profile)</li>
+  <li>Carbapenemase genotype (OXA-23, NDM, or unknown)</li>
+  <li>Patient travel history — particularly travel to Country Z</li>
+  <li>Patient transfer history between hospitals</li>
+</ul>
+
+<h3 class="sub-title">WGS Analysis Pipeline</h3>
+<div class="inject-block" style="padding:16px 20px;">
+  <div class="pipeline-row"><span class="pipeline-tool">Input</span><span class="pipeline-arrow">→</span><span>36 FASTA assemblies (+ raw FASTQ for QC)</span></div>
+  <div class="pipeline-row"><span class="pipeline-tool">MLST</span><span class="pipeline-arrow">→</span><span><strong>mlst v2.33</strong> — Pasteur scheme (<em>abaumannii_2</em>) + Oxford scheme (<em>abaumannii</em>)</span></div>
+  <div class="pipeline-row"><span class="pipeline-tool">AMR Profiling</span><span class="pipeline-arrow">→</span><span><strong>Abricate v1.0.1</strong> — CARD database; 49 unique resistance genes identified across 36 isolates</span></div>
+  <div class="pipeline-row"><span class="pipeline-tool">cgMLST</span><span class="pipeline-arrow">→</span><span>Pathogenwatch / Kleborate — core genome MLST types (CT types)</span></div>
+  <div class="pipeline-row"><span class="pipeline-tool">Core SNP Alignment</span><span class="pipeline-arrow">→</span><span><strong>Parsnp v2.1.1</strong> — 75,985 variable SNP sites from core-genome alignment (35 assemblies; AB_43 excluded — no assembly available)</span></div>
+  <div class="pipeline-row"><span class="pipeline-tool">Phylogeny</span><span class="pipeline-arrow">→</span><span><strong>IQ-TREE2</strong> — GTR+G substitution model, 1,000 ultrafast bootstrap replicates; ML tree rooted by outgroup</span></div>
+  <div class="pipeline-row"><span class="pipeline-tool">SNP Distances</span><span class="pipeline-arrow">→</span><span>IQ-TREE pairwise ML distances (mldist) scaled to genome-wide SNP estimates (× 4 Mb genome)</span></div>
+  <div class="pipeline-row"><span class="pipeline-tool">K/O Locus Typing</span><span class="pipeline-arrow">→</span><span>Kleborate / Pathogenwatch — surface polysaccharide locus typing (KL / OCL)</span></div>
+  <div class="pipeline-row"><span class="pipeline-tool">Visualisation</span><span class="pipeline-arrow">→</span><span>D3.js v7 — interactive phylogenetic tree, AMR heatmap, SNP distance matrix, timeline</span></div>
+</div>
+
+<div class="callout amber">
+  <h4>Note on AB_43</h4>
+  <p>Isolate AB_43 (Hospital B, Inject 3.1) had raw FASTQ reads available but no assembled FASTA, likely due to low coverage or failed assembly. It was excluded from the core-genome alignment and is therefore absent from the phylogenetic tree and SNP matrix. The remaining 35 isolates were used for phylogenetic reconstruction.</p>
+</div>
+
+
+<!-- =================== INJECT 1 =================== -->
+<h2 class="section-title" id="inject1">3. Inject 1 — Epidemiological Analysis</h2>
+
+<div class="inject-block">
+  <div class="inject-header">
+    <div class="inject-num">1.1</div>
+    <div>
+      <h3>Introduction and Case Definition</h3>
+      <span>Received: January 2024 · 71 Acinetobacter baumannii clinical records</span>
+    </div>
+  </div>
+  <p>The NRL is presented with 71 <em>A. baumannii</em> clinical records from six hospitals (A–F) spanning all of 2023. The initial task is to define a case, construct an epidemic curve, and select priority isolates for WGS.</p>
+  <p><strong>Working case definition:</strong> A patient with a clinical <em>A. baumannii</em> isolate demonstrating carbapenem resistance (or confirmed OXA-23/NDM carriage), admitted to Hospital A–F during January–December 2023.</p>
+</div>
+
+<div class="inject-block">
+  <div class="inject-header">
+    <div class="inject-num">1.2</div>
+    <div>
+      <h3>Epidemiological Data — EpiCurve Construction</h3>
+      <span>71 clinical records with hospitalization dates, antibiograms, and travel history</span>
+    </div>
+  </div>
+
+  <p>Examination of the full case records reveals a temporal clustering of cases in Hospital A beginning in July 2023, with cases extending through the rest of the year. A subset of cases from Hospitals B–F appear later, some with documented patient transfers or travel to Country Z.</p>
+
+  <h4 style="font-size:.9rem;font-weight:700;margin:16px 0 8px;">Key Metadata Prioritised for Isolate Selection</h4>
+  <p>Workshop participants were asked to rank metadata factors. The most-selected indicators (Survey 1 results, N=20 participants) were:</p>
+  <div class="snp-stats">
+    <div class="snp-stat"><div class="val">17</div><div class="lbl">Travel history</div></div>
+    <div class="snp-stat"><div class="val">16</div><div class="lbl">Hospital of admission</div></div>
+    <div class="snp-stat"><div class="val">15</div><div class="lbl">Carbapenemase genotype</div></div>
+    <div class="snp-stat"><div class="val">14</div><div class="lbl">Admission / discharge dates</div></div>
+    <div class="snp-stat"><div class="val">13</div><div class="lbl">Symptom onset date</div></div>
+    <div class="snp-stat"><div class="val">9</div><div class="lbl">Hospital transfer history</div></div>
+  </div>
+
+  <p>Based on combined epidemiological assessment, <strong>36 isolates</strong> (AB_23–AB_58) were prioritised for WGS, covering all six hospitals and including isolates from patients with Country Z travel history.</p>
+
+  <div class="callout">
+    <h4>Epidemic Curve Interpretation</h4>
+    <p>The epidemic curve for Hospital A shows a propagated (person-to-person) pattern emerging from July 2023, consistent with nosocomial transmission rather than a common-point source. The broader pattern across all six hospitals suggests inter-hospital spread possibly linked to patient transfers and importation events from Country Z.</p>
+  </div>
+</div>
+
+
+<!-- =================== INJECT 2 =================== -->
+<h2 class="section-title" id="inject2">4. Inject 2 — Hospital A WGS Analysis (18 Isolates)</h2>
+
+<div class="inject-block">
+  <div class="inject-header">
+    <div class="inject-num">2.1</div>
+    <div>
+      <h3>Hospital A Sequencing Data Released</h3>
+      <span>Isolates AB_23 – AB_40 · FASTQ + FASTA</span>
+    </div>
+  </div>
+
+  <p>Whole-genome sequencing data for all 18 Hospital A isolates (AB_23–AB_40) are released. Participants perform MLST, AMR annotation, cgMLST, and SNP-based phylogenetic analysis.</p>
+
+  <h3 class="sub-title">MLST Results — Hospital A</h3>
+  <table class="data-table">
+    <thead><tr><th>Isolate</th><th>MLST Pasteur</th><th>MLST Oxford</th><th>cgMLST</th><th>Carbapenemase</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>AB_23, 24, 26, 27, 28, 29, 30, 31</td><td><span class="pill pill-blue">ST2</span></td><td>ST208</td><td>CT1451</td><td><span class="pill pill-red">OXA-23</span></td><td>Cluster A</td></tr>
+      <tr><td>AB_25</td><td><span class="pill pill-gray">ST1017</span></td><td>ST1017</td><td>—</td><td>OXA-66</td><td>Sporadic</td></tr>
+      <tr><td>AB_32</td><td><span class="pill pill-blue">ST2</span></td><td>ST195</td><td>CT607</td><td><span class="pill pill-red">OXA-23</span></td><td>Inter-cluster</td></tr>
+      <tr><td>AB_33, 34, 35, 37, 38, 39, 40</td><td><span class="pill pill-blue">ST2</span></td><td>ST195 / ST1816</td><td>CT607 / CT2896</td><td><span class="pill pill-red">OXA-23</span></td><td>Cluster B</td></tr>
+      <tr><td>AB_36</td><td><span class="pill pill-blue">ST2</span></td><td>ST195</td><td>CT6</td><td><span class="pill pill-gray">NDM-2</span></td><td>Sporadic</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="sub-title">Two Intra-Hospital Clusters Identified</h3>
+
+  <div class="cluster-grid">
+    <div class="cluster-box a">
+      <div class="cluster-label">Cluster A</div>
+      <h4>AB_23, 24, 26, 27, 28, 29, 30, 31</h4>
+      <ul>
+        <li><strong>MLST:</strong> ST2 (Pasteur) / ST208 (Oxford)</li>
+        <li><strong>cgMLST:</strong> CT1451 (all identical)</li>
+        <li><strong>Carbapenemase:</strong> OXA-23</li>
+        <li><strong>Intra-cluster SNPs:</strong> 4–210 (closest pairs: AB_23/AB_29 = 4 SNPs; AB_26/AB_27 = 4 SNPs)</li>
+        <li><strong>Epi link:</strong> All from Hospital A with overlapping admission dates; direct patient-to-patient contact chains documented</li>
+      </ul>
+    </div>
+    <div class="cluster-box b">
+      <div class="cluster-label">Cluster B</div>
+      <h4>AB_33, 34, 35, 37, 38, 39, 40 (±AB_32)</h4>
+      <ul>
+        <li><strong>MLST:</strong> ST2 (Pasteur) / ST195 or ST1816 (Oxford)</li>
+        <li><strong>cgMLST:</strong> CT607 / CT2896</li>
+        <li><strong>Carbapenemase:</strong> OXA-23</li>
+        <li><strong>Intra-cluster SNPs:</strong> ~1,100–3,600 (more diverse; possible indirect transmission)</li>
+        <li><strong>Epi link:</strong> Hospital A, overlapping admissions; patient AB_33 (PT11) linked to multiple cluster members</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="cluster-grid">
+    <div class="cluster-box sporadic">
+      <div class="cluster-label">Sporadic — AB_25</div>
+      <h4>ST1017 / OXA-66 only</h4>
+      <p>Genetically distant from both clusters (millions of SNPs across the full genome — completely different MLST lineage). Not part of the outbreak. Likely healthcare-associated acquisition with a different source.</p>
+    </div>
+    <div class="cluster-box sporadic">
+      <div class="cluster-label">Sporadic — AB_36</div>
+      <h4>ST2 / NDM-2 (no OXA-23)</h4>
+      <p>Same species and MLST but carries NDM-2 rather than OXA-23. Phylogenetically distinct (~38,000 SNPs from Cluster A). Represents an independent CRAB case, not part of the OXA-23 outbreak.</p>
+    </div>
+  </div>
+
+  <div class="callout green">
+    <h4>Survey 2 Results — European NRL Consensus on Hospital A</h4>
+    <p>18 of 19 responding NRLs identified <strong>2 clusters</strong> in the Hospital A data. 100% of respondents identified signs of intra-hospital transmission. The most important metadata parameters selected were: hospitalization dates, MLST, cgMLST, carbapenemase genotype, and phylogenetic relation.</p>
+  </div>
+</div>
+
+
+<!-- =================== INJECT 3 =================== -->
+<h2 class="section-title" id="inject3">5. Inject 3 — Multi-Hospital Expansion</h2>
+
+<div class="inject-block">
+  <div class="inject-header">
+    <div class="inject-num">3.1</div>
+    <div>
+      <h3>Hospital B &amp; C Sequencing (10 Isolates)</h3>
+      <span>Isolates AB_41 – AB_50 · Hospitals B and C · Including Country Z patients</span>
+    </div>
+  </div>
+
+  <p>Sequencing data for 10 additional isolates from Hospitals B and C are released. Key isolates of interest include those from patients with documented travel to Country Z.</p>
+
+  <table class="data-table">
+    <thead><tr><th>Isolate</th><th>Hospital</th><th>MLST</th><th>Carbapenemase</th><th>Country</th><th>cgMLST</th><th>Finding</th></tr></thead>
+    <tbody>
+      <tr><td>AB_41, AB_42</td><td>Hospital B</td><td>ST2</td><td>OXA-23</td><td>Country Z</td><td>CT1414</td><td>Outbreak — linked to Clusters A/B</td></tr>
+      <tr><td>AB_43</td><td>Hospital B</td><td>—</td><td>—</td><td>—</td><td>—</td><td>No assembly (excluded from tree)</td></tr>
+      <tr><td>AB_44, AB_45</td><td>Hospital B</td><td>ST103</td><td>NDM-4</td><td>Country Z</td><td>—</td><td>Sporadic — distinct lineage</td></tr>
+      <tr><td>AB_46, AB_47</td><td>Hospital C</td><td>ST2</td><td>OXA-23</td><td>Country Z</td><td>CT1451</td><td>Outbreak — Cluster A related</td></tr>
+      <tr><td>AB_48, AB_49</td><td>Hospital C</td><td>ST2</td><td>OXA-23</td><td>Country Y</td><td>CT1451</td><td>Outbreak — Cluster A related</td></tr>
+      <tr><td>AB_50</td><td>Hospital C</td><td>ST2</td><td>OXA-23</td><td>Country X</td><td>CT607</td><td>Cluster B–related / sporadic</td></tr>
+    </tbody>
+  </table>
+
+  <p>The phylogenetic tree integrating Hospitals B and C isolates confirms two critical findings:</p>
+  <ol>
+    <li><strong>AB_46 and AB_47</strong> (Hospital C, Country Z patients) cluster tightly with Hospital A Cluster A isolates — demonstrating inter-hospital spread of the ST2/OXA-23/CT1451 clone, plausibly via patient transfer or healthcare worker movement.</li>
+    <li><strong>AB_44 and AB_45</strong> (Hospital B, Country Z patients, ST103/NDM-4) are phylogenetically completely distinct. These represent an independent importation event unrelated to the main outbreak. Their branch length in the ML tree is exceptionally long (~1.17 ML distance units), confirming they are genuine outliers.</li>
+  </ol>
+
+  <div class="callout amber">
+    <h4>Country Z — A Complex Signal</h4>
+    <p>Multiple patient sub-groups from Country Z are present in the data. Survey responses found that participants identified: sporadic cases (16/19), intra-hospital transmission (9/19), and inter-hospital transmission (5/19) among Country Z-associated patients. The key distinction is that some Country Z patients carried the same ST2/OXA-23 outbreak clone (AB_41, AB_42, AB_46, AB_47), while others carried an entirely different NDM-4 lineage (AB_44, AB_45).</p>
+  </div>
+</div>
+
+<div class="inject-block">
+  <div class="inject-header">
+    <div class="inject-num">3.2</div>
+    <div>
+      <h3>Hospital D, E &amp; F Sequencing (8 Isolates)</h3>
+      <span>Isolates AB_51 – AB_58 · Completing the full dataset</span>
+    </div>
+  </div>
+
+  <table class="data-table">
+    <thead><tr><th>Isolate</th><th>Hospital</th><th>MLST</th><th>Carbapenemase</th><th>Finding</th></tr></thead>
+    <tbody>
+      <tr><td>AB_51, 52, 53, 54, 55, 56</td><td>Hospital D</td><td>ST2</td><td>OXA-23</td><td>Outbreak — Cluster A/B related</td></tr>
+      <tr><td>AB_57, AB_58</td><td>Hospital E &amp; F</td><td>ST2</td><td>OXA-23</td><td>Outbreak — Cluster A/B related</td></tr>
+    </tbody>
+  </table>
+
+  <p>The final inject completes the pan-hospital picture. Hospital D isolates (AB_51–AB_56) place within the Cluster A/B supercluster, confirming that the ST2/OXA-23 CRAB outbreak extended well beyond Hospital A. Isolates AB_57 and AB_58 (Hospitals E and F, respectively) also cluster within the outbreak clade, with bootstrap support of 100.</p>
+</div>
+
+
+<!-- =================== FULL RESULTS =================== -->
+<h2 class="section-title" id="results">6. Full Genomic Results</h2>
+
+<h3 class="sub-title">6.1 MLST and Lineage Summary</h3>
+<table class="data-table">
+  <thead><tr><th>MLST Pasteur</th><th>Count</th><th>Carbapenemase</th><th>Interpretation</th></tr></thead>
+  <tbody>
+    <tr><td><span class="pill pill-blue">ST2</span></td><td>33</td><td>OXA-23 (31), NDM-2 (2)</td><td>Main outbreak lineage (GC2); NDM-2 is sporadic</td></tr>
+    <tr><td><span class="pill pill-gray">ST1017</span></td><td>1</td><td>OXA-66 (intrinsic only)</td><td>Unrelated sporadic case (AB_25)</td></tr>
+    <tr><td><span class="pill pill-gray">ST103</span></td><td>2</td><td>NDM-4</td><td>Unrelated Country Z importation (AB_44, AB_45)</td></tr>
+  </tbody>
+</table>
+
+<h3 class="sub-title">6.2 Phylogenetic Structure</h3>
+<p>The IQ-TREE2 maximum likelihood phylogeny (GTR+G, 1,000 ultrafast bootstrap replicates) resolves four major groupings:</p>
+
+<ol>
+  <li><strong>Main outbreak supercluster</strong> (bootstrap 100): Contains all 31 OXA-23-positive ST2 isolates across Hospitals A–F. Within this, two sub-clusters are supported:
+    <ul>
+      <li><em>Cluster A</em>: AB_23, 24, 26–31, 46–49, 51–58 — tight ST2/CT1451 clade, closest pairs differ by as few as 4 pairwise SNPs</li>
+      <li><em>Cluster B</em>: AB_32–35, 37–42 — broader ST2/CT607/CT2896 diversity, consistent with a longer or more indirect transmission chain</li>
+    </ul>
+  </li>
+  <li><strong>AB_36</strong> (NDM-2, ST2): Branches off within the ST2 tree but distinct from both clusters (~38,000 SNPs from Cluster A)</li>
+  <li><strong>AB_44 / AB_45</strong> (NDM-4, ST103): Extremely long branch (ML distance ~1.17) — completely unrelated to outbreak</li>
+  <li><strong>AB_25</strong> (ST1017): Outgroup — distinct lineage confirming this is a sporadic non-outbreak case</li>
+</ol>
+
+<h3 class="sub-title">6.3 AMR Gene Profile</h3>
+<p>Abricate (CARD database) identified <strong>49 unique resistance genes</strong> across 36 isolates (1,017 total hits). The major resistance gene categories are:</p>
+<div class="amr-cats">
+  <div class="amr-cat"><div class="cat-name">Efflux pumps</div><div class="cat-count">adeABC, adeIJK, adeL, adeN, abeM, abeS, AmvA, AbaQ, AbaF</div></div>
+  <div class="amr-cat"><div class="cat-name">Carbapenemases</div><div class="cat-count">OXA-23 (31 isolates), OXA-66, NDM-4, NDM-2</div></div>
+  <div class="amr-cat"><div class="cat-name">Aminoglycosides</div><div class="cat-count">APH(3')-Ia, APH(3'')-Ib, APH(6)-Id, AAC(3)-Ia</div></div>
+  <div class="amr-cat"><div class="cat-name">Sulfonamides</div><div class="cat-count">sul1, sul2</div></div>
+  <div class="amr-cat"><div class="cat-name">Tetracyclines</div><div class="cat-count">tet(B)</div></div>
+  <div class="amr-cat"><div class="cat-name">Beta-lactamases</div><div class="cat-count">ADC (intrinsic), TEM-12, OXA-66</div></div>
+</div>
+
+<div class="callout">
+  <h4>Core AMR Signature of Outbreak Isolates</h4>
+  <p>All outbreak cluster isolates (Clusters A and B) share a common AMR backbone: <strong>OXA-23</strong> (acquired), <strong>OXA-66</strong> (intrinsic), <strong>ADC-30</strong>, <strong>adeABC</strong>, <strong>adeIJK</strong>, <strong>tet(B)</strong>, and sulfonamide resistance genes — consistent with a pan-drug-resistant Hospital clone. AB_25 (ST1017) lacks OXA-23 and carries only the intrinsic <em>A. baumannii</em> resistome. AB_44/AB_45 (ST103/NDM-4) carry a completely different AMR gene set.</p>
+</div>
+
+<h3 class="sub-title">6.4 Reconstructed Transmission Timeline</h3>
+<div class="timeline-event"><div class="tl-date">Jan–Jun 2023</div><div class="tl-content"><strong>Background / Pre-outbreak period</strong> A. baumannii cases present in Hospital A at baseline; AB_25 (ST1017) represents a sporadic non-OXA-23 case during this period.</div></div>
+<div class="timeline-event"><div class="tl-date">Jul 2023</div><div class="tl-content"><strong>Outbreak emergence — Hospital A</strong> First OXA-23 CRAB cases from Cluster A appear in Hospital A. Index patient(s) cannot be definitively identified from genomic data alone, but epidemiological data supports onset in July.</div></div>
+<div class="timeline-event"><div class="tl-date">Jul–Aug 2023</div><div class="tl-content"><strong>Intra-hospital spread — Hospital A</strong> Cluster A expands within Hospital A (AB_23–31). Cluster B cases also emerge in Hospital A (AB_33–40), suggesting either a second introduction or deeper in-hospital evolution of a related clone.</div></div>
+<div class="timeline-event"><div class="tl-date">Aug–Sep 2023</div><div class="tl-content"><strong>Inter-hospital spread — Hospital B &amp; C</strong> ST2/OXA-23 isolates appear in Hospitals B and C. Patients with Country Z travel history (AB_41, AB_42, AB_46, AB_47) carry the same outbreak clone, suggesting bidirectional spread (importation from Country Z and/or export to Country Z-linked patients).</div></div>
+<div class="timeline-event"><div class="tl-date">Sep–Dec 2023</div><div class="tl-content"><strong>Full multi-hospital outbreak — Hospitals D, E, F</strong> The ST2/OXA-23 outbreak clone is detected across all six hospitals. Hospital D (AB_51–56) is most heavily affected. Hospitals E (AB_57) and F (AB_58) each contribute one isolate.</div></div>
+<div class="timeline-event"><div class="tl-date">Throughout 2023</div><div class="tl-content"><strong>Concurrent sporadic cases</strong> AB_36 (NDM-2), AB_44/45 (NDM-4, ST103), and AB_50 (ST2, Country X) represent independent events unrelated to the main ST2/OXA-23 outbreak cluster.</div></div>
+
+
+<!-- =================== CONCLUSIONS =================== -->
+<h2 class="section-title" id="conclusions">7. Conclusions</h2>
+
+<div class="callout green">
+  <h4>Primary Conclusion</h4>
+  <p>This exercise demonstrates a confirmed multi-hospital outbreak of ST2 (GC2) OXA-23-positive CRAB originating in Hospital A and spreading to all five additional hospitals. The outbreak involved at least two phylogenetically distinct sub-clusters (Cluster A and Cluster B) within the ST2/OXA-23 lineage. Inter-hospital transmission is strongly supported by phylogenomics and is partly linked to patient movement and travel from Country Z.</p>
+</div>
+
+<div class="conclusion-grid">
+  <div class="concl-card">
+    <div class="concl-icon">🦠</div>
+    <h4>Outbreak clone confirmed</h4>
+    <p>33/36 isolates belong to ST2 (Pasteur) with OXA-23 carbapenemase. All cluster within a single ML phylogenetic clade with bootstrap support of 100.</p>
+  </div>
+  <div class="concl-card">
+    <div class="concl-icon">🏥</div>
+    <h4>Multi-hospital spread</h4>
+    <p>The ST2/OXA-23 clone was detected in all six hospitals. Inter-hospital links are supported both by genomic clustering and by patient transfer / travel history data.</p>
+  </div>
+  <div class="concl-card">
+    <div class="concl-icon">🌍</div>
+    <h4>Country Z — complex signal</h4>
+    <p>Country Z-associated patients carried two distinct organisms: the outbreak clone (ST2/OXA-23, Cluster A) AND an unrelated NDM-4 strain (ST103). Careful genomic discrimination was essential to avoid misclassifying the NDM-4 cases as part of the outbreak.</p>
+  </div>
+  <div class="concl-card">
+    <div class="concl-icon">🔬</div>
+    <h4>Sporadic cases identified</h4>
+    <p>AB_25 (ST1017), AB_36 (NDM-2), AB_44/45 (NDM-4/ST103), and AB_50 are not part of the outbreak. WGS correctly excluded these from the transmission cluster that epi data alone might have grouped together.</p>
+  </div>
+  <div class="concl-card">
+    <div class="concl-icon">🧬</div>
+    <h4>WGS adds critical resolution</h4>
+    <p>MLST alone (all isolates = ST2) could not distinguish the two sub-clusters or the sporadic NDM-2 case. cgMLST and SNP-level analysis were required for definitive cluster assignment.</p>
+  </div>
+  <div class="concl-card">
+    <div class="concl-icon">📊</div>
+    <h4>European NRL consensus</h4>
+    <p>18/19 participating NRLs independently reached the same conclusion: 2 intra-hospital clusters in Hospital A, with 100% agreement on intra-hospital transmission — validating the robustness of WGS-based outbreak analysis.</p>
+  </div>
+</div>
+
+<h3 class="sub-title">Key Lessons from the Exercise</h3>
+<ul>
+  <li><strong>Integrate epi and genomics early:</strong> Travel history, hospitalization dates, and patient transfers were essential for correct interpretation of WGS data — neither data type alone was sufficient.</li>
+  <li><strong>Do not conflate same-MLST with same-outbreak:</strong> ST2 includes both the main outbreak clone and the sporadic NDM-2 strain (AB_36). Carbapenemase genotype and SNP-level distances are needed to distinguish them.</li>
+  <li><strong>Long branches are informative:</strong> AB_25, AB_44, and AB_45 have extraordinarily long phylogenetic branches — an immediate visual signal of genetic distinctiveness requiring no statistical test.</li>
+  <li><strong>Bootstrap confidence matters:</strong> The main outbreak clade has 100% bootstrap support; internal nodes within clusters have lower (15–63%) support, reflecting genuine phylogenetic uncertainty where transmission chains are ambiguous.</li>
+  <li><strong>Reference selection in core-genome tools:</strong> Parsnp uses one assembly as a reference; the reference must be carefully chosen and should not be treated as a biologically meaningful root.</li>
+  <li><strong>cgMLST complements SNP analysis:</strong> CT types provide a reproducible, nomenclature-based shorthand that is consistent across laboratories, while SNP distances give higher-resolution discrimination within the same CT type.</li>
+</ul>
+
+<div style="margin-top:32px;text-align:center;">
+  <a class="btn" href="dashboard.html">Explore Interactive Dashboard →</a>
+  <a class="btn btn-outline" href="index.html">← Back to Home</a>
+</div>
+
+</main>
+
+<footer>
+  <p>Data from <a href="#">EURGen-RefLabCap EQA Workshop</a> · Statens Serum Institut / DTU · January 2024 · Fictitious scenario for training purposes</p>
+  <p style="margin-top:6px">Analysis reproduced independently · Tools: Parsnp 2.1.1, IQ-TREE2, Abricate 1.0.1, mlst 2.33 · Visualisation: D3.js v7</p>
+</footer>
+
+</body>
+</html>

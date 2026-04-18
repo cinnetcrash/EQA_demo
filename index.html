@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRAB Outbreak EQA — DTU / EURGen-RefLabCap 2024</title>
+<style>
+:root{--dark:#0f2044;--accent:#2563eb;--light:#f0f4ff;--text:#1e293b;--muted:#64748b;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#f8fafc;color:var(--text);}
+header{background:linear-gradient(135deg,#0f2044,#1e3a8a,#2563eb);color:#fff;padding:48px 24px;text-align:center;}
+header h1{font-size:2rem;font-weight:800;line-height:1.2;max-width:800px;margin:0 auto;}
+header h1 em{color:#93c5fd;font-style:italic;}
+header p{margin-top:12px;opacity:.75;font-size:.95rem;max-width:600px;margin:12px auto 0;}
+.badge-row{display:flex;justify-content:center;gap:10px;margin-top:20px;flex-wrap:wrap;}
+.badge{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:8px;padding:6px 14px;font-size:.78rem;font-weight:600;}
+main{max-width:1000px;margin:0 auto;padding:48px 20px;}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;margin-top:32px;}
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:28px;box-shadow:0 2px 8px rgba(0,0,0,.05);transition:transform .15s,box-shadow .15s;}
+.card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.1);}
+.card-icon{font-size:2rem;margin-bottom:12px;}
+.card h2{font-size:1.1rem;font-weight:700;margin-bottom:8px;}
+.card p{font-size:.82rem;color:var(--muted);line-height:1.6;margin-bottom:16px;}
+.btn{display:inline-block;background:var(--accent);color:#fff;padding:9px 18px;border-radius:8px;text-decoration:none;font-size:.82rem;font-weight:600;transition:background .12s;}
+.btn:hover{background:#1d4ed8;}
+.btn-outline{background:transparent;color:var(--accent);border:2px solid var(--accent);}
+.btn-outline:hover{background:var(--accent);color:#fff;}
+section{margin-top:48px;}
+section h2{font-size:1.3rem;font-weight:700;margin-bottom:16px;padding-bottom:8px;border-bottom:2px solid #e2e8f0;}
+.timeline-steps{display:flex;flex-direction:column;gap:0;}
+.step{display:flex;gap:16px;align-items:flex-start;padding:16px 0;border-bottom:1px solid #f1f5f9;}
+.step-num{width:32px;height:32px;border-radius:50%;background:var(--accent);color:#fff;font-weight:800;font-size:.85rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;}
+.step-content h4{font-size:.9rem;font-weight:700;}
+.step-content p{font-size:.8rem;color:var(--muted);margin-top:2px;line-height:1.5;}
+.highlight-box{background:var(--light);border-left:4px solid var(--accent);border-radius:0 8px 8px 0;padding:16px 20px;margin:24px 0;}
+.highlight-box h4{font-size:.85rem;font-weight:700;color:var(--accent);}
+.highlight-box p{font-size:.82rem;margin-top:4px;color:var(--text);}
+footer{background:var(--dark);color:rgba(255,255,255,.6);text-align:center;padding:24px;font-size:.75rem;}
+footer a{color:#93c5fd;}
+.stats-mini{display:flex;gap:16px;flex-wrap:wrap;margin:20px 0;}
+.stat-m{background:var(--light);border-radius:10px;padding:12px 18px;flex:1;min-width:120px;}
+.stat-m .val{font-size:1.4rem;font-weight:800;color:var(--accent);}
+.stat-m .lbl{font-size:.72rem;color:var(--muted);}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Carbapenem-Resistant <em>Acinetobacter baumannii</em><br>Multi-Hospital Outbreak Investigation</h1>
+  <p>EURGen-RefLabCap Multidisciplinary WGS Training Workshop · January 2024</p>
+  <div class="badge-row">
+    <span class="badge">🏛️ Statens Serum Institut / DTU</span>
+    <span class="badge">🇪🇺 EURGen-RefLabCap</span>
+    <span class="badge">🧬 WGS-based outbreak analysis</span>
+    <span class="badge">🔬 Fictitious training scenario</span>
+  </div>
+</header>
+
+<main>
+  <div class="highlight-box">
+    <h4>ℹ️ About this resource</h4>
+    <p>This site presents the genomic epidemiology analysis of a fictional CRAB outbreak exercise run as part of the EURGen-RefLabCap EQA programme. The data, hospitals, patients, and country names are entirely fictitious and designed for training purposes. This analysis was reproduced independently using open bioinformatics tools.</p>
+  </div>
+
+  <div class="stats-mini">
+    <div class="stat-m"><div class="val">36</div><div class="lbl">WGS isolates</div></div>
+    <div class="stat-m"><div class="val">6</div><div class="lbl">Hospitals</div></div>
+    <div class="stat-m"><div class="val">31</div><div class="lbl">OXA-23 CRAB</div></div>
+    <div class="stat-m"><div class="val">49</div><div class="lbl">AMR genes detected</div></div>
+    <div class="stat-m"><div class="val">1000×</div><div class="lbl">Bootstrap replicates</div></div>
+  </div>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-icon">🌳</div>
+      <h2>Interactive Dashboard</h2>
+      <p>Explore the complete genomic dataset interactively — phylogenetic tree, AMR resistance heatmap, SNP distance matrix, and sample timeline. Click any isolate to view full details.</p>
+      <a class="btn" href="dashboard.html">Open Dashboard →</a>
+    </div>
+    <div class="card">
+      <div class="card-icon">📋</div>
+      <h2>Outbreak Investigation Report</h2>
+      <p>Step-by-step walk-through of how the outbreak was solved: from epidemiological curve construction to WGS-based cluster confirmation across all six hospitals.</p>
+      <a class="btn btn-outline" href="report.html">Read Report →</a>
+    </div>
+  </div>
+
+  <section>
+    <h2>Exercise Overview</h2>
+    <div class="timeline-steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <h4>Inject 1 — Epidemiological Data</h4>
+          <p>The NRL receives records for 71 <em>A. baumannii</em> cases from 6 hospitals (Jan–Dec 2023). Participants construct epicurves and select 36 priority isolates for WGS based on dates, hospitals, travel history, and antibiograms.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <h4>Inject 2 — Hospital A Sequencing (18 isolates)</h4>
+          <p>WGS data (FASTQ + FASTA) for Hospital A isolates AB_23–AB_40 are released. Participants perform MLST, AMR annotation, and SNP-based phylogenetics to identify within-hospital clusters.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <h4>Inject 3.1 — Hospital B & C Sequencing (10 isolates)</h4>
+          <p>Sequences for AB_41–AB_50 (Hospital B and C) are provided. The outbreak investigation expands to determine links between hospitals and patients with travel history to Country Z.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <h4>Inject 3.2 — Hospital D, E & F Sequencing (8 isolates)</h4>
+          <p>Final sequences (AB_51–AB_58) complete the dataset. A full phylogenomic view reveals the scope of the multi-hospital outbreak, inter-hospital transmission routes, and sporadic non-outbreak cases.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Bioinformatics Pipeline</h2>
+    <div style="font-size:.82rem;color:var(--muted);line-height:2;font-family:monospace;background:#f1f5f9;padding:16px;border-radius:8px;">
+      Assemblies (36 × FASTA) → <b>MLST</b> (mlst 2.33, Pasteur scheme)<br>
+      Assemblies → <b>AMR Profiling</b> (Abricate 1.0.1, CARD database)<br>
+      Assemblies → <b>Core-genome alignment</b> (Parsnp 2.1.1, 75,985 SNP sites)<br>
+      SNP alignment → <b>ML Phylogeny</b> (IQ-TREE2, GTR+G, 1000 ultrafast bootstrap)<br>
+      ML distances → <b>Pairwise SNP matrix</b> (IQ-TREE mldist × 4 Mb genome)
+    </div>
+  </section>
+</main>
+
+<footer>
+  <p>Data from <a href="#">EURGen-RefLabCap EQA workshop</a> · Statens Serum Institut · January 2024 · Fictitious scenario for training purposes</p>
+  <p style="margin-top:6px">Analysis reproduced independently · Tools: Parsnp 2.1.1, IQ-TREE2, Abricate 1.0.1, mlst 2.33 · Visualization: D3.js v7</p>
+</footer>
+
+</body>
+</html>
