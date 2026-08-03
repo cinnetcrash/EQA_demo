@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: If you use this work, please cite it as below.
+title: Interactive WGS-based CRAB outbreak investigation (EQA training exercise)
+type: software
+authors:
+- given-names: Gültekin
+  family-names: Ünal
+  orcid: https://orcid.org/0000-0002-8996-7028
+  affiliation: Ankara University, Faculty of Veterinary Medicine, Department of Microbiology
+abstract: An interactive, browser-based walkthrough of a whole-genome-sequencing-based outbreak
+  investigation of carbapenem-resistant Acinetobacter baumannii, built around the EURGen-RefLabCap
+  2024 external quality assessment exercise. Intended as a teaching resource; the scenario
+  is fictitious.
+repository-code: https://github.com/cinnetcrash/EQA_demo
+url: https://github.com/cinnetcrash/EQA_demo
+license: CC-BY-4.0
+keywords:
+- Acinetobacter baumannii
+- CRAB
+- outbreak investigation
+- whole genome sequencing
+- external quality assessment
+- training
+- genomic epidemiology
